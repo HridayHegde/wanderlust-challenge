@@ -48,7 +48,18 @@ Unfortunately, there's a bug (or several) preventing the application from runnin
 docker compose up
 ```
 
-6. The application should be running at http://localhost:3000 (if all issues are fixed)
+6. Sync migrations with the db
+
+```bash
+npx prisma migrate deploy
+```
+
+7. Seed the DB with placeholder information
+```bash
+npm run db:seed
+```
+
+8. The application should be running at http://localhost:3000 (if all issues are fixed)
 
 ## API Endpoints
 
@@ -82,6 +93,22 @@ npm test
 
 Good luck! 🚀
 
-```
-
-Let's also update the .env.example file to reflect this change:
+## Fix Summary
+- Downgraded React to version 18 and added a `package-lock.json` to ensure compatibility with Docker and CI environments.
+- Added a specific version for prisma and prisma client, to fix issues when running via docker
+- Made changes to the Docker file for docker to identify next properly, it would error out with a "next not found" in other instances
+- Added installation of openssl into the Docker to properly instantiate the docker instance for prisma
+- Fixed issues for a primary windows machine, added "linux-musl-openssl-3.0.x" to schema.prisma under binaryTargets
+- Added ts-node into dev dependencies to seed the db
+- Added output: 'standalone' in next config to generate a standalone
+- Switched jest to use node instead of jsdom to work with nextjs [Ref](https://github.com/vercel/next.js/discussions/59041)
+- Implemented the search and transcribe functions in the UI
+- Issues exist with the transcribe functionality - discussed in the PR notes
+- Fixed the search API to support standard requests as well as NextRequests (This shouldn't need not done but did not want to make fixes to the existing tests).
+- Added query to the search schema
+- Made small syntax fixes towards prisma on the ping API
+- Fixed some minor schema name issues with the seed file
+- Added a migration file for stability, this should not be left out
+- Added things to the Readme for smoother working
+- Added a setup test to test all these fixes
+- Moved from Open router to Gemini and added some QOL features to the main screen

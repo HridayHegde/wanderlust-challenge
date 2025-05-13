@@ -1,20 +1,32 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import { searchSchema } from "@/lib/validations"
 
-export async function POST(request: Request) {
+function isNextRequest(request: NextRequest | Request): request is NextRequest {
+  return 'json' in request
+}
+
+export async function POST(request: NextRequest | Request) {
   try {
-    const body = await request.json()
+    let body: any
+    if (isNextRequest(request)) {
+      body = await request.json()
+    } else {
+      // For node-mocks-http Request
+      body = (request as any).body
+    }
 
     const result = searchSchema.parse(body)
 
-    const destinations = await db.destinations.findMany({
-      where: {
-        OR: [
-          { name: { contains: result.query, mode: "insensitive" } },
-          { description: { contains: result.query, mode: "insensitive" } },
-        ],
-      },
+    const destinations = await db.destination.findMany({
+      where: result.query
+        ? {
+          OR: [
+            { name: { contains: result.query, mode: "insensitive" } },
+            { description: { contains: result.query, mode: "insensitive" } },
+          ],
+        }
+        : undefined,
       take: result.limit || 10,
     })
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 const envSchema = z.object({
-  GOOGLE_AI_API_URL: z.string().url(),
+  GOOGLE_AI_API_KEY: z.string(),
 })
 
 const transcribeSchema = z.object({
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
   try {
     // Validate environment variables
     const env = envSchema.parse({
-      GOOGLE_AI_API_URL: process.env.GOOGLE_AI_API_URL,
+      GOOGLE_AI_API_KEY: process.env.GOOGLE_AI_API_KEY,
     })
 
     const formData = await request.formData()
@@ -25,25 +25,56 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Audio file is required" }, { status: 400 })
     }
 
-    // This endpoint doesn't exist and needs to be fixed
-    const response = await fetch(`${env.GOOGLE_AI_API_URL}/transcribe`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.GOOGLE_AI_API_KEY}`,
-        "Content-Type": "multipart/form-data",
-      },
-      body: JSON.stringify({
-        file: audioFile,
-        language,
-      }),
-    })
+    // Convert audio file to base64
+    const arrayBuffer = await audioFile.arrayBuffer()
+    const base64Audio = Buffer.from(arrayBuffer).toString('base64')
+
+    // Call Google Generative Language API
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${env.GOOGLE_AI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: "Please analyze this audio and extract ONLY words that are names of cities, locations, states, or countries. Return ONLY the location name mentioned in the audio. Do not include any other words or explanations. If audio is empty or you do not find anything said in the audio file return 'AUDIO NOT RECOGNIZED'. Only return the name if its in the audio, otherwise return 'AUDIO NOT RECOGNIZED'"
+            }, {
+              inline_data: {
+                mime_type: audioFile.type,
+                data: base64Audio
+              }
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            topK: 32,
+            topP: 1,
+            maxOutputTokens: 4096,
+          }
+        }),
+      }
+    )
 
     if (!response.ok) {
-      throw new Error(`Transcription failed: ${response.statusText}`)
+      const errorData = await response.json()
+      throw new Error(`Transcription failed: ${errorData.error?.message || response.statusText}`)
     }
 
     const data = await response.json()
-    return NextResponse.json({ transcript: data.text })
+
+    console.log("data", JSON.stringify(data, null, 2))
+    
+    // Extract the transcript from the response
+    const transcript:string = data.candidates?.[0]?.content?.parts?.[0]?.text || ""
+
+    if(transcript.includes("AUDIO NOT RECOGNIZED")){
+      throw new Error(`Transcription failed: Audio blank`)
+    }
+    
+    return NextResponse.json({ transcript })
   } catch (error) {
     console.error("Transcription API error:", error)
     return NextResponse.json(

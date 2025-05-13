@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client"
 const prisma = new PrismaClient()
 
 async function main() {
-  await prisma.destinations.deleteMany({})
+  await prisma.destination.deleteMany({})
 
   const destinations = [
     {
@@ -28,7 +28,7 @@ async function main() {
 
   Promise.all(
     destinations.map((destination) =>
-      prisma.destinations.create({
+      prisma.destination.create({
         data: destination,
       }),
     ),
