@@ -40,8 +40,8 @@ describe('Project Setup and Configuration', () => {
   describe('Environment Configuration', () => {
     it('should have required environment variables', () => {
       expect(process.env.DATABASE_URL).toBeDefined()
-      expect(process.env.OPENROUTER_API_URL).toBeDefined()
-      expect(process.env.OPENROUTER_API_KEY).toBeDefined()
+      expect(process.env.GOOGLE_AI_API_URL).toBeDefined()
+      expect(process.env.GOOGLE_AI_API_KEY).toBeDefined()
     })
   })
 

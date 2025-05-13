@@ -111,3 +111,4 @@ Good luck! 🚀
 - Added a migration file for stability, this should not be left out
 - Added things to the Readme for smoother working
 - Added a setup test to test all these fixes
+- Moved from Open router to Gemini and added some QOL features to the main screen
